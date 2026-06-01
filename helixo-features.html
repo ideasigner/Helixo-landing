@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Helixo — 本地 HTML 生产力工具</title>
+  <style>
+    :root {
+      --ivory:    #FAF9F5;
+      --slate:    #141413;
+      --clay:     #D97757;
+      --oat:      #E3DACC;
+      --olive:    #788C5D;
+      --rust:     #B04A3F;
+      --gray-150: #F0EEE6;
+      --gray-300: #D1CFC5;
+      --gray-500: #87867F;
+      --gray-700: #3D3D3A;
+      --white:    #FFFFFF;
+
+      --serif: ui-serif, Georgia, 'Times New Roman', serif;
+      --sans:  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      --mono:  ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --border: 1.5px solid var(--gray-300);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--ivory);
+      color: var(--gray-700);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      padding: 56px 24px 120px;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr);
+      gap: 48px;
+    }
+
+    @media (max-width: 920px) {
+      .page { grid-template-columns: 1fr; }
+      nav { display: none; }
+    }
+
+    /* ── nav ──────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 32px;
+      align-self: start;
+      font-size: 13px;
+    }
+    nav .label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 12px;
+    }
+    nav a {
+      display: block;
+      padding: 5px 0 5px 12px;
+      border-left: 2px solid var(--gray-300);
+      color: var(--gray-700);
+      text-decoration: none;
+      transition: color 120ms, border-color 120ms;
+    }
+    nav a:hover { color: var(--slate); border-color: var(--slate); }
+    nav a.l2 { padding-left: 24px; font-size: 12.5px; color: var(--gray-500); }
+    nav a.on { color: var(--slate); border-color: var(--clay); font-weight: 500; }
+
+    /* ── header ───────────────────────────── */
+    header { margin-bottom: 12px; }
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 10px;
+    }
+    h1 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 32px;
+      color: var(--slate);
+      letter-spacing: -0.01em;
+      margin-bottom: 14px;
+    }
+    .tldr {
+      border: 1.5px solid var(--gray-300);
+      border-left: 3px solid var(--clay);
+      border-radius: 10px;
+      background: #fff;
+      padding: 16px 18px;
+      margin-bottom: 8px;
+      font-size: 14.5px;
+      line-height: 1.65;
+    }
+    .tldr b { color: var(--slate); }
+
+    .prompt-box {
+      background: var(--gray-150);
+      border: var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      font-size: 13.5px;
+      margin-bottom: 36px;
+      max-width: 760px;
+      color: var(--gray-500);
+    }
+    .prompt-box .label {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* ── headings ─────────────────────────── */
+    h2 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 22px;
+      color: var(--slate);
+      margin: 40px 0 14px;
+      scroll-margin-top: 24px;
+    }
+    h3 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 17px;
+      color: var(--slate);
+      margin: 24px 0 8px;
+    }
+    p { margin-bottom: 12px; max-width: 680px; }
+    code { font-family: var(--mono); font-size: 13px; background: var(--gray-150); padding: 1px 5px; border-radius: 4px; }
+
+    /* ── feature section number ───────────── */
+    .section-num {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      background: var(--oat);
+      color: var(--slate);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      margin-right: 10px;
+      vertical-align: 3px;
+    }
+
+    /* ── collapsible details ──────────────── */
+    details {
+      border: 1.5px solid var(--gray-300);
+      border-radius: 10px;
+      background: #fff;
+      margin: 14px 0;
+      overflow: hidden;
+    }
+    summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 14px 16px;
+      font-family: var(--serif);
+      font-size: 16px;
+      color: var(--slate);
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::before {
+      content: "▸";
+      color: var(--clay);
+      font-family: var(--sans);
+      font-size: 12px;
+      transition: transform 120ms;
+      flex-shrink: 0;
+    }
+    details[open] summary::before { transform: rotate(90deg); }
+    details .body { padding: 0 16px 16px; }
+    details .body p { font-size: 14px; max-width: 640px; }
+
+    /* ── screenshot placeholder ───────────── */
+    .screenshot {
+      border: 2px dashed var(--gray-300);
+      border-radius: var(--radius-md);
+      background: var(--gray-150);
+      padding: 36px 24px;
+      text-align: center;
+      margin: 14px 0 4px;
+      transition: border-color 180ms;
+    }
+    .screenshot:hover { border-color: var(--clay); }
+    .screenshot .placeholder-text {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--gray-500);
+      letter-spacing: 0.02em;
+    }
+    .screenshot .placeholder-hint {
+      font-size: 12.5px;
+      color: var(--gray-500);
+      margin-top: 6px;
+    }
+    .screenshot img {
+      max-width: 100%;
+      border-radius: var(--radius-sm);
+      display: block;
+      margin: 0 auto;
+    }
+    .screenshot-caption {
+      font-size: 12.5px;
+      color: var(--gray-500);
+      text-align: center;
+      margin-top: 8px;
+      font-style: italic;
+    }
+
+    /* ── hero screenshot (larger, full-width) ─ */
+    .hero-shot {
+      border: 2px dashed var(--gray-300);
+      border-radius: var(--radius-md);
+      background: var(--gray-150);
+      padding: 48px 24px;
+      text-align: center;
+      margin: 20px 0 8px;
+      transition: border-color 180ms;
+    }
+    .hero-shot:hover { border-color: var(--clay); }
+    .hero-shot .placeholder-text {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--gray-500);
+      letter-spacing: 0.02em;
+    }
+    .hero-shot .placeholder-hint {
+      font-size: 13.5px;
+      color: var(--gray-500);
+      margin-top: 8px;
+    }
+    .hero-shot img {
+      max-width: 100%;
+      border-radius: var(--radius-sm);
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* ── callout ──────────────────────────── */
+    .callout {
+      display: flex;
+      gap: 12px;
+      border: 1.5px solid var(--oat);
+      background: rgba(227,218,204,0.35);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin: 18px 0;
+      font-size: 14px;
+      max-width: 720px;
+    }
+    .callout .ico { color: var(--clay); font-weight: 600; flex-shrink: 0; }
+
+    /* ── data table ───────────────────────── */
+    table.data {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--white);
+      border: var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin: 16px 0;
+      max-width: 720px;
+      font-size: 14px;
+    }
+    table.data thead th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray-500);
+      background: var(--gray-150);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--gray-300);
+    }
+    table.data tbody td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--gray-150);
+      vertical-align: top;
+    }
+    table.data tbody tr:last-child td { border-bottom: none; }
+    table.data tbody tr:hover { background: var(--ivory); }
+
+    /* ── tech badge ───────────────────────── */
+    .tech-line {
+      font-family: var(--mono);
+      font-size: 13px;
+      background: var(--slate);
+      color: #E8E6DE;
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      margin-top: 8px;
+    }
+
+    /* ── footer ───────────────────────────── */
+    footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--gray-300);
+      font-size: 12.5px;
+      color: var(--gray-500);
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── side nav ── -->
+  <nav id="sidenav">
+    <div class="label">本页内容</div>
+    <a href="#tldr" class="on">概述</a>
+    <a href="#workspace">01 文件夹即工作区</a>
+    <a href="#workspace" class="l2">自动扫描与索引</a>
+    <a href="#workspace" class="l2">收藏夹 + 最近文件</a>
+    <a href="#ide">02 像 IDE 一样管理</a>
+    <a href="#ide" class="l2">多标签 + 拖拽分屏</a>
+    <a href="#ide" class="l2">工作区自动恢复</a>
+    <a href="#sync">03 实时同步创作流</a>
+    <a href="#sync" class="l2">文件变更自动刷新</a>
+    <a href="#sync" class="l2">源码编辑模式</a>
+    <a href="#browse">04 深度浏览与调试</a>
+    <a href="#browse" class="l2">智能文档大纲</a>
+    <a href="#browse" class="l2">元素检查器</a>
+    <a href="#output">05 输出与协作</a>
+    <a href="#output" class="l2">灵活导出任意宽度</a>
+    <a href="#output" class="l2">直接导入 Figma</a>
+    <a href="#focus">06 为专注而设计</a>
+    <a href="#focus" class="l2">一键专注模式</a>
+    <a href="#focus" class="l2">多语言</a>
+    <a href="#tech">技术定位</a>
+    <a href="#users">目标用户</a>
+  </nav>
+
+  <!-- ── main ── -->
+  <main>
+    <header>
+      <div class="eyebrow">产品特性 · 功能说明</div>
+      <h1>Helixo — 本地 HTML 生产力工具</h1>
+      <div class="tldr" id="tldr">
+        <b>TL;DR</b> — AI 时代，HTML 正在成为本地生产力文档的通用格式。但传统浏览器对本地 HTML 的支持几乎为零：没有文件导航、没有多标签、没有实时同步。Helixo 是一款专为本地 HTML 工作流设计的桌面工具，让 HTML 从"网页载体"变成"可管理、可协作、可扩展的生产力文档"。
+      </div>
+      <div class="prompt-box">
+        <span class="label">原始需求</span>
+        基于完整的产品功能文档，将 Helixo 的 6 大模块、11 项子功能、技术定位和目标用户整理为可视化的功能说明页面。
+      </div>
+    </header>
+
+    <!-- ========== Hero 截图 ========== -->
+    <!-- 【建议】Helixo 主界面截图，展示整体布局：左侧文件树 + 中间标签页 + 右侧预览 -->
+    <div class="hero-shot" id="hero-screenshot">
+      <div class="placeholder-text">[ 在此处添加 Helixo 主界面截图 ]</div>
+      <div class="placeholder-hint">建议尺寸：1440×900 或 16:10 比例 · 展示左侧文件树 + 多标签 + 预览区</div>
+    </div>
+    <p class="screenshot-caption" id="hero-caption">Helixo 主界面总览 — 文件夹即工作区</p>
+
+    <!-- 01 -->
+    <h2 id="workspace"><span class="section-num">01</span>文件夹即工作区</h2>
+    <p>打开一个文件夹，Helixo 将其视为完整的工作区。文件发现、导航、收藏一气呵成。</p>
+
+    <details open>
+      <summary>自动扫描与索引</summary>
+      <div class="body">
+        <p>打开一个文件夹，Helixo 自动识别其中所有 HTML 文件，按目录结构呈现。支持小文件过滤、MHTML 识别，告别在 Finder 里逐个双击打开的时代。左侧文件树 + 搜索框，导航效率提升一个量级。</p>
+        <!-- 【建议】左侧文件树展开状态截图 -->
+        <div class="screenshot" id="screenshot-01a">
+          <div class="placeholder-text">[ 左侧文件树 + 搜索框截图 ]</div>
+          <div class="placeholder-hint">建议：展示文件夹层级、HTML 文件图标、搜索框高亮</div>
+        </div>
+        <p class="screenshot-caption" id="caption-01a">文件树自动扫描并按目录结构索引</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>收藏夹 + 最近文件</summary>
+      <div class="body">
+        <p>常用文件一键收藏，最近打开的文档随时回溯。左侧边栏在"文件树 / 收藏夹 / 最近"三种视图间自由切换，高频文件永远在手边。</p>
+        <!-- 【建议】收藏夹视图截图 -->
+        <div class="screenshot" id="screenshot-01b">
+          <div class="placeholder-text">[ 收藏夹 / 最近文件视图截图 ]</div>
+          <div class="placeholder-hint">建议：展示三种视图切换的 Tab 状态</div>
+        </div>
+        <p class="screenshot-caption" id="caption-01b">收藏夹与最近文件三种视图切换</p>
+      </div>
+    </details>
+
+    <!-- 02 -->
+    <h2 id="ide"><span class="section-num">02</span>像 IDE 一样管理文档</h2>
+    <p>将代码编辑器的高效操作模式引入文档管理。多标签、分屏、工作区恢复，全部到位。</p>
+
+    <details open>
+      <summary>多标签 + 拖拽分屏</summary>
+      <div class="body">
+        <p>任意拖拽标签页即可左右分屏，同时对比两份文档，或一边写、一边看效果。双编辑器分组、标签页 drag-and-drop，操作丝滑程度不输现代代码编辑器。</p>
+        <!-- 【建议】分屏布局截图 -->
+        <div class="screenshot" id="screenshot-02a">
+          <div class="placeholder-text">[ 多标签 + 左右分屏截图 ]</div>
+          <div class="placeholder-hint">建议：展示两个标签页并排、拖拽中的状态</div>
+        </div>
+        <p class="screenshot-caption" id="caption-02a">拖拽标签页即可左右分屏对比文档</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>工作区自动恢复</summary>
+      <div class="body">
+        <p>关闭即保存，打开即继续。Helixo 自动记忆你的工作状态：打开的文件、标签页顺序、分屏布局、侧边栏宽度、缩放比例，下次启动一键回到上次离开的地方。</p>
+        <!-- 【建议】工作区恢复前后对比（可用两张小图并排，或单张说明） -->
+        <div class="screenshot" id="screenshot-02b">
+          <div class="placeholder-text">[ 工作区自动恢复说明图 ]</div>
+          <div class="placeholder-hint">建议：退出前后对比，或状态栏提示文案</div>
+        </div>
+        <p class="screenshot-caption" id="caption-02b">关闭后自动保存完整工作状态，重启一键恢复</p>
+      </div>
+    </details>
+
+    <!-- 03 -->
+    <h2 id="sync"><span class="section-num">03</span>实时同步创作流</h2>
+    <p>AI Agent 自动生成内容时，Helixo 是连接"生成"与"查看"的桥梁。文件变更即时同步，创作循环无需中断。</p>
+
+    <details open>
+      <summary>文件变更自动刷新</summary>
+      <div class="body">
+        <p>开启自动刷新后，外部任何修改（包括 AI Agent 自动生成或修改内容）都会即时反映在预览中。不再需要手动切回浏览器按 F5，这是 AI 协作工作流的关键基础设施。</p>
+        <!-- 【建议】自动刷新前后对比（GIF 最佳，静态图可用 split 对比） -->
+        <div class="screenshot" id="screenshot-03a">
+          <div class="placeholder-text">[ 文件变更自动刷新截图 ]</div>
+          <div class="placeholder-hint">建议：编辑器修改代码 → Helixo 自动刷新后的对比</div>
+        </div>
+        <p class="screenshot-caption" id="caption-03a">外部修改即时同步到预览，无需手动刷新</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>源码编辑模式</summary>
+      <div class="body">
+        <p>预览和源码一键切换，修改 HTML 后直接保存。写代码、看效果、再调代码，在一个窗口内完成循环，无需在编辑器和浏览器之间来回跳转。</p>
+        <!-- 【建议】预览 / 源码切换截图 -->
+        <div class="screenshot" id="screenshot-03b">
+          <div class="placeholder-text">[ 预览与源码切换截图 ]</div>
+          <div class="placeholder-hint">建议：展示预览模式和源码模式的切换按钮/快捷键</div>
+        </div>
+        <p class="screenshot-caption" id="caption-03b">预览与源码一键切换，单窗口完成编辑循环</p>
+      </div>
+    </details>
+
+    <!-- 04 -->
+    <h2 id="browse"><span class="section-num">04</span>深度浏览与调试</h2>
+    <p>Helixo 不只是查看器。大纲导航、元素检查——为开发者提供浏览器不愿给本地文件的深度工具。</p>
+
+    <details open>
+      <summary>智能文档大纲</summary>
+      <div class="body">
+        <p>自动从 HTML 页面中提取 <code>h1</code>-<code>h6</code> 标题结构，生成可点击的目录导航。长文档阅读时，左侧大纲随滚动实时高亮当前位置，点击即可跳转——浏览器永远不会为本地 HTML 提供这种体验。</p>
+        <!-- 【建议】大纲导航截图 -->
+        <div class="screenshot" id="screenshot-04a">
+          <div class="placeholder-text">[ 智能文档大纲截图 ]</div>
+          <div class="placeholder-hint">建议：展示左侧大纲面板、当前高亮章节、点击跳转效果</div>
+        </div>
+        <p class="screenshot-caption" id="caption-04a">自动提取 h1-h6 标题，实时高亮当前阅读位置</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>元素检查器</summary>
+      <div class="body">
+        <p>点击预览中的任意元素，实时查看 Tag、ID、Class、Color、Background、Font-Size 等样式信息。前端开发者调试样式时，无需再开浏览器 DevTools。</p>
+        <!-- 【建议】元素检查器面板截图 -->
+        <div class="screenshot" id="screenshot-04b">
+          <div class="placeholder-text">[ 元素检查器面板截图 ]</div>
+          <div class="placeholder-hint">建议：展示点击元素后弹出的样式信息面板</div>
+        </div>
+        <p class="screenshot-caption" id="caption-04b">点击任意元素查看完整样式信息</p>
+      </div>
+    </details>
+
+    <!-- 05 -->
+    <h2 id="output"><span class="section-num">05</span>输出与协作</h2>
+    <p>从代码到设计稿，从文档到素材。Helixo 打通本地 HTML 与外部协作工具之间的最后一公里。</p>
+
+    <details open>
+      <summary>灵活导出任意宽度</summary>
+      <div class="body">
+        <p>支持导出完整页面为 PDF、PNG/JPEG（可自定义视口宽度）。做分享、归档、演示素材时，不再受浏览器打印样式的限制。</p>
+        <!-- 【建议】导出设置面板截图 -->
+        <div class="screenshot" id="screenshot-05a">
+          <div class="placeholder-text">[ 导出设置面板截图 ]</div>
+          <div class="placeholder-hint">建议：展示格式选择（PDF/PNG/JPEG）+ 宽度输入框</div>
+        </div>
+        <p class="screenshot-caption" id="caption-05a">支持 PDF、PNG、JPEG 多种格式，可自定义视口宽度</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>直接导入 Figma</summary>
+      <div class="body">
+        <p>一键将 HTML 页面转换为 Figma 可识别的格式拷贝到剪贴板，设计协作无缝衔接。从代码到设计稿，不再需要手动还原。</p>
+        <!-- 【建议】Figma 导入流程截图（Helixo 内按钮 + Figma 粘贴后效果） -->
+        <div class="screenshot" id="screenshot-05b">
+          <div class="placeholder-text">[ Figma 导入流程截图 ]</div>
+          <div class="placeholder-hint">建议：Helixo 内"拷贝到 Figma"按钮 + Figma 粘贴效果对比</div>
+        </div>
+        <p class="screenshot-caption" id="caption-05b">一键拷贝，Figma 中直接粘贴即可编辑</p>
+      </div>
+    </details>
+
+    <!-- 06 -->
+    <h2 id="focus"><span class="section-num">06</span>为专注而设计</h2>
+    <p>工具不应争夺注意力。Helixo 在需要时隐身，在需要时顺手。</p>
+
+    <details open>
+      <summary>一键专注模式</summary>
+      <div class="body">
+        <p>整屏只展示文件本身内容，工具栏、侧边栏、标签栏全部隐去。适合演示、截图、沉浸式阅读，也适合向他人展示时聚焦内容本身。</p>
+        <!-- 【建议】专注模式前后对比截图 -->
+        <div class="screenshot" id="screenshot-06a">
+          <div class="placeholder-text">[ 专注模式截图 ]</div>
+          <div class="placeholder-hint">建议：展示专注模式下全部 UI 隐去、仅剩文档内容的干净画面</div>
+        </div>
+        <p class="screenshot-caption" id="caption-06a">专注模式 — 整屏只展示文档内容，零干扰</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>多语言</summary>
+      <div class="body">
+        <p>完整支持英/中/日/韩四语言，界面所有文案（包括工具提示、状态栏、错误提示）全部国际化。</p>
+        <!-- 【建议】语言切换菜单截图 -->
+        <div class="screenshot" id="screenshot-06b">
+          <div class="placeholder-text">[ 语言切换菜单截图 ]</div>
+          <div class="placeholder-hint">建议：展示语言下拉菜单的展开状态</div>
+        </div>
+        <p class="screenshot-caption" id="caption-06b">英/中/日/韩四语言完整支持</p>
+      </div>
+    </details>
+
+    <!-- Tech -->
+    <h2 id="tech">技术定位</h2>
+    <p>Helixo 基于 Electron 构建，零后端依赖，所有文件本地处理。轻量、快速、为本地 HTML 工作流而生。</p>
+    <span class="tech-line">Electron · Zero Backend · Local-First</span>
+
+    <!-- Users -->
+    <h2 id="users">目标用户</h2>
+    <table class="data">
+      <thead>
+        <tr><th>用户类型</th><th>核心场景</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>前端开发者</strong></td>
+          <td>本地 HTML 原型开发、样式调试、多文件对比</td>
+        </tr>
+        <tr>
+          <td><strong>设计师</strong></td>
+          <td>HTML 到 Figma 工作流、设计稿归档、演示截图</td>
+        </tr>
+        <tr>
+          <td><strong>内容创作者</strong></td>
+          <td>AI 辅助写作、长文档管理、大纲导航</td>
+        </tr>
+        <tr>
+          <td><strong>项目经理</strong></td>
+          <td>文档维护、收藏管理、PDF 归档分享</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <span class="ico">★</span>
+      <div>Helixo 将浏览器从"上网工具"重新定义为"本地文档生产力环境"。如果你经常通过 AI Agent 生成 HTML 内容、需要在本地管理大量 HTML 文档、或希望将 HTML 作为可协作的生产力载体，Helixo 提供了浏览器无法比拟的针对性体验。</div>
+    </div>
+
+    <footer>
+      基于 Helixo 产品功能文档生成 · 单文件 HTML 交付物
+    </footer>
+  </main>
+
+</div>
+
+<script>
+/* 导航高亮 */
+(function(){
+  var links = document.querySelectorAll('nav a[href^="#"]');
+  var headings = [];
+  links.forEach(function(a){
+    var id = a.getAttribute('href').slice(1);
+    var h = document.getElementById(id);
+    if (h && !headings.includes(h)) headings.push(h);
+  });
+
+  var observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if (entry.isIntersecting) {
+        links.forEach(function(l){ l.classList.remove('on'); });
+        var active = document.querySelector('nav a[href="#' + entry.target.id + '"]');
+        if (active) active.classList.add('on');
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+
+  headings.forEach(function(h){ observer.observe(h); });
+})();
+</script>
+</body>
+</html>

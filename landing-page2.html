@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Helixo — HTML 预览与导出工具</title>
+  <link rel="icon" href="src/img/icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --ivory: #FAF9F5;
+      --slate: #141413;
+      --clay: #D97757;
+      --oat: #E3DACC;
+      --olive: #788C5D;
+      --white: #FFFFFF;
+      --gray-100: #F0EEE6;
+      --gray-300: #D1CFC5;
+      --gray-500: #87867F;
+      --gray-700: #3D3D3A;
+      --serif: ui-serif, Georgia, serif;
+      --sans: system-ui, -apple-system, sans-serif;
+      --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+      --shadow-sm: 0 1px 2px rgba(20, 20, 19, 0.06);
+      --shadow-md: 0 4px 10px rgba(20, 20, 19, 0.08);
+      --shadow-lg: 0 12px 28px rgba(20, 20, 19, 0.12);
+      --r-xs: 4px;
+      --r-sm: 8px;
+      --r-md: 12px;
+      --r-lg: 20px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--slate);
+      background: var(--ivory);
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 24px 96px;
+    }
+
+    /* Nav */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(250, 249, 245, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--gray-300);
+    }
+    .nav-inner {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--slate);
+    }
+    .nav-logo img { border-radius: var(--r-sm); display: block; }
+    .nav-logo-text { font-family: var(--serif); font-size: 1.25rem; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-link { font-size: 0.9375rem; color: var(--gray-700); text-decoration: none; transition: color 0.12s; }
+    .nav-link:hover { color: var(--slate); }
+    .nav-cta { height: 36px; padding: 0 16px; font-size: 0.875rem; }
+
+    /* Hero */
+    .hero { padding: 80px 0 96px; text-align: center; }
+    .hero-badge { margin-bottom: 24px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 10px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border-radius: 999px;
+      background: rgba(217, 119, 87, 0.14);
+      color: var(--clay);
+    }
+    .t-display {
+      font-family: var(--serif);
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      line-height: 1.1;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+    .hero-title { margin-bottom: 20px; }
+    .hero-subtitle { font-size: 1.125rem; color: var(--gray-700); max-width: 520px; margin: 0 auto 12px; }
+    .hero-tagline { font-size: 1rem; color: var(--gray-500); margin-bottom: 36px; line-height: 1.7; }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 44px;
+      padding: 0 20px;
+      font-family: var(--sans);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      border-radius: var(--r-sm);
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, transform 0.1s;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--clay); color: var(--white); border-color: var(--clay); }
+    .btn-primary:hover { background: #C7684C; border-color: #C7684C; transform: translateY(-1px); }
+    .btn-secondary { background: var(--white); color: var(--slate); border-color: var(--gray-300); }
+    .btn-secondary:hover { background: var(--gray-100); transform: translateY(-1px); }
+    .hero-visual { margin-top: 64px; }
+    .hero-screenshot {
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--r-lg);
+      padding: 12px;
+      box-shadow: var(--shadow-lg);
+    }
+    .hero-screenshot-inner {
+      background: var(--ivory);
+      border-radius: var(--r-sm);
+      height: 360px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--gray-300);
+      overflow: hidden;
+    }
+    .hero-screenshot-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      color: var(--gray-500);
+    }
+    .hero-screenshot-placeholder svg { width: 64px; height: 64px; opacity: 0.5; }
+
+    /* Section */
+    .section { padding: 64px 0; }
+    .section-header { text-align: center; max-width: 600px; margin: 0 auto 48px; }
+    .t-h1 { font-family: var(--serif); font-size: 2rem; line-height: 1.2; font-weight: 500; letter-spacing: -0.01em; }
+    .section-title { margin-bottom: 16px; }
+    .section-desc { color: var(--gray-700); }
+
+    /* Pain Table */
+    .pain-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--white);
+      border-radius: var(--r-md);
+      overflow: hidden;
+      border: 1.5px solid var(--gray-300);
+    }
+    .pain-table th {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--gray-500);
+      padding: 14px 20px;
+      text-align: left;
+      background: var(--gray-100);
+      border-bottom: 1px solid var(--gray-300);
+    }
+    .pain-table td { padding: 16px 20px; border-bottom: 1px solid var(--gray-100); font-size: 0.9375rem; }
+    .pain-table tr:last-child td { border-bottom: none; }
+    .pain-table .arrow { color: var(--clay); text-align: center; width: 48px; }
+    .pain-table .new { color: var(--olive); font-weight: 500; }
+
+    /* Value Prop */
+    .value-prop { background: var(--oat); border-radius: var(--r-lg); padding: 48px; text-align: center; }
+    .value-prop-text { font-family: var(--serif); font-size: 1.5rem; line-height: 1.4; max-width: 680px; margin: 0 auto; }
+    .value-prop-sub { margin-top: 20px; color: var(--gray-700); max-width: 580px; margin-left: auto; margin-right: auto; }
+
+    /* Features Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 768px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .features-grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--r-md);
+      padding: 28px;
+      transition: box-shadow 0.15s;
+    }
+    .card:hover { box-shadow: var(--shadow-md); }
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      background: rgba(217, 119, 87, 0.12);
+      border-radius: var(--r-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      color: var(--clay);
+    }
+    .feature-title { font-family: var(--serif); font-size: 1.125rem; font-weight: 500; margin-bottom: 10px; }
+    .feature-desc { color: var(--gray-700); font-size: 0.9375rem; }
+    .feature-quote {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--gray-100);
+      font-size: 0.875rem;
+      color: var(--gray-500);
+      font-style: italic;
+    }
+    .export-formats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; }
+    @media (max-width: 480px) { .export-formats { grid-template-columns: repeat(2, 1fr); } }
+    .export-format { background: var(--gray-100); border-radius: var(--r-xs); padding: 10px 8px; text-align: center; }
+    .export-format-name { font-weight: 600; font-size: 0.8125rem; margin-bottom: 2px; }
+    .export-format-desc { font-size: 0.6875rem; color: var(--gray-500); }
+
+    /* Personas */
+    .personas {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 768px) { .personas { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .personas { grid-template-columns: 1fr; } }
+    .persona-card { text-align: center; padding: 32px 20px; }
+    .persona-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--oat);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 1.5rem;
+    }
+    .persona-title { font-family: var(--serif); font-size: 1.0625rem; font-weight: 500; margin-bottom: 8px; }
+    .persona-desc { font-size: 0.875rem; color: var(--gray-700); }
+
+    /* Steps */
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; position: relative; }
+    @media (max-width: 640px) { .steps { grid-template-columns: 1fr; } }
+    .step { text-align: center; }
+    .step-num {
+      width: 48px;
+      height: 48px;
+      background: var(--clay);
+      color: var(--white);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin: 0 auto 20px;
+    }
+    .step-title { font-family: var(--serif); font-size: 1.0625rem; font-weight: 500; margin-bottom: 8px; }
+    .step-desc { font-size: 0.9375rem; color: var(--gray-700); }
+    .step-keys { display: flex; gap: 6px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+    .key {
+      display: inline-flex;
+      align-items: center;
+      height: 26px;
+      padding: 0 8px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      border-radius: var(--r-xs);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--gray-700);
+    }
+    @media (min-width: 641px) {
+      .steps > .step:not(:last-child)::after {
+        content: '→';
+        position: absolute;
+        top: 24px;
+        right: -4px;
+        transform: translateX(50%);
+        color: var(--gray-300);
+        font-size: 1.5rem;
+      }
+      .steps { gap: 40px; }
+    }
+
+    /* Tech */
+    .tech-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    @media (max-width: 640px) { .tech-grid { grid-template-columns: 1fr; } }
+    .tech-item {
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--r-md);
+      padding: 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .tech-bullet { width: 8px; height: 8px; background: var(--clay); border-radius: 50%; margin-top: 7px; flex-shrink: 0; }
+    .tech-text { font-size: 0.9375rem; }
+    .tech-text strong { color: var(--slate); }
+
+    /* Highlight list */
+    .highlight-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 32px; max-width: 640px; margin: 40px auto 0; }
+    @media (max-width: 480px) { .highlight-list { grid-template-columns: 1fr; } }
+    .highlight-item { display: flex; align-items: center; gap: 10px; font-size: 0.9375rem; }
+    .highlight-dot { width: 6px; height: 6px; background: var(--clay); border-radius: 50%; flex-shrink: 0; }
+
+    /* FAQ */
+    .faq-list { max-width: 700px; margin: 0 auto; }
+    .faq-item { border-bottom: 1px solid var(--gray-300); }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q {
+      padding: 20px 0;
+      font-weight: 500;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+    .faq-q::after { content: '+'; font-size: 1.25rem; color: var(--clay); transition: transform 0.2s; font-weight: 300; }
+    .faq-item.open .faq-q::after { transform: rotate(45deg); }
+    .faq-a { padding: 0 0 20px; color: var(--gray-700); font-size: 0.9375rem; display: none; }
+    .faq-item.open .faq-a { display: block; }
+
+    /* CTA */
+    .cta-section { background: var(--slate); color: var(--white); border-radius: var(--r-lg); padding: 64px 48px; text-align: center; }
+    .cta-title { font-family: var(--serif); font-size: 2rem; font-weight: 500; margin-bottom: 12px; }
+    .cta-desc { color: rgba(255,255,255,0.65); margin-bottom: 32px; }
+    .cta-btn { height: 48px; padding: 0 28px; font-size: 1rem; background: var(--clay); color: var(--white); border: none; }
+    .cta-btn:hover { background: #C7684C; }
+
+    /* Footer */
+    .footer { border-top: 1px solid var(--gray-300); padding: 40px 0; }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center; }
+    @media (max-width: 480px) { .footer-inner { flex-direction: column; gap: 20px; text-align: center; } }
+    .footer-brand { display: flex; align-items: center; gap: 10px; }
+    .footer-brand img { border-radius: var(--r-xs); display: block; }
+    .footer-name { font-family: var(--serif); font-weight: 500; }
+    .footer-copy { color: var(--gray-500); font-size: 0.875rem; }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-link { color: var(--gray-500); text-decoration: none; font-size: 0.875rem; transition: color 0.12s; }
+    .footer-link:hover { color: var(--slate); }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <img src="src/img/icon.svg" alt="Helixo" width="32" height="32">
+        <span class="nav-logo-text">Helixo</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features" class="nav-link">功能</a>
+        <a href="#get-started" class="nav-link">上手</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+        <a href="#" class="btn btn-primary nav-cta">免费下载</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="page">
+        <div class="hero-badge">
+          <span class="badge">macOS · 免费开源</span>
+        </div>
+        <h1 class="t-display hero-title">Helixo</h1>
+        <p class="hero-subtitle">HTML 预览与导出工具</p>
+        <p class="hero-tagline">打开文件夹 → 写代码保存 → 预览自动刷新 → 导出 PDF / PNG / SVG / Figma</p>
+        <div class="hero-actions">
+          <a href="#" class="btn btn-primary">免费下载 macOS 版</a>
+          <a href="#features" class="btn btn-secondary">查看功能</a>
+        </div>
+
+        <div class="hero-visual">
+          <div class="hero-screenshot">
+            <div class="hero-screenshot-inner">
+              <div class="hero-screenshot-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/>
+                  <path d="M8 21h8M12 17v4"/>
+                </svg>
+                <span>左侧文件树，右侧多标签页预览，分栏可调</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pain Points -->
+    <section class="section">
+      <div class="page">
+        <div class="section-header">
+          <h2 class="t-h1 section-title">这些事，做一次还行，做十次就烦了</h2>
+          <p class="section-desc">Helixo 帮你省掉这些步骤</p>
+        </div>
+        <table class="pain-table">
+          <thead>
+            <tr>
+              <th>以前</th>
+              <th style="width: 48px;"></th>
+              <th>用 Helixo 之后</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>VS Code 写完，切到浏览器按 F5 看效果</td>
+              <td class="arrow">→</td>
+              <td class="new">保存文件，Helixo 预览自动刷新</td>
+            </tr>
+            <tr>
+              <td>HTML 要放进 Figma，只能截图贴图</td>
+              <td class="arrow">→</td>
+              <td class="new">一键导出到 Figma，文字可编辑</td>
+            </tr>
+            <tr>
+              <td>导出 PNG 靠截图，分辨率不够</td>
+              <td class="arrow">→</td>
+              <td class="new">直接导出 PNG，支持 2x 高清</td>
+            </tr>
+            <tr>
+              <td>要在多个 HTML 文件之间来回切换</td>
+              <td class="arrow">→</td>
+              <td class="new">多标签页 + 文件树，一点就开</td>
+            </tr>
+            <tr>
+              <td>给客户出 PDF，得先开浏览器再打印</td>
+              <td class="arrow">→</td>
+              <td class="new">Cmd+P 直接导出 PDF</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Value Prop -->
+    <section class="section">
+      <div class="page">
+        <div class="value-prop">
+          <p class="value-prop-text">不替代你的编辑器，只做<strong>预览和导出</strong>这两件事。</p>
+          <p class="value-prop-sub">VS Code 写代码，Helixo 看效果出交付物。分栏视图、多标签页、专注模式、快速编辑，都是为了让这件事更顺。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section" id="features">
+      <div class="page">
+        <div class="section-header">
+          <h2 class="t-h1 section-title">功能</h2>
+          <p class="section-desc">每天都会被用到的功能</p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature 1: Live Preview -->
+          <div class="card">
+            <div class="feature-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">保存即刷新</h3>
+            <p class="feature-desc">文件系统监听，VS Code 保存文件，Helixo 预览自动更新。不需要切换窗口，不需要按刷新。</p>
+          </div>
+
+          <!-- Feature 2: Export -->
+          <div class="card">
+            <div class="feature-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">四种导出格式</h3>
+            <p class="feature-desc">PDF、PNG、SVG、Figma。都在导出菜单里，不需要开浏览器、不需要截图工具。</p>
+            <div class="export-formats">
+              <div class="export-format"><div class="export-format-name">PDF</div><div class="export-format-desc">矢量文字</div></div>
+              <div class="export-format"><div class="export-format-name">PNG</div><div class="export-format-desc">2x 高清</div></div>
+              <div class="export-format"><div class="export-format-name">SVG</div><div class="export-format-desc">可编辑</div></div>
+              <div class="export-format"><div class="export-format-name">Figma</div><div class="export-format-desc">DOM 保留</div></div>
+            </div>
+          </div>
+
+          <!-- Feature 3: Split View -->
+          <div class="card">
+            <div class="feature-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="12" y1="3" x2="12" y2="21"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">分栏视图</h3>
+            <p class="feature-desc">左右双面板，可同时预览两个 HTML 文件。可拖拽调整分栏宽度，互不干扰。</p>
+          </div>
+
+          <!-- Feature 4: Multi-tabs -->
+          <div class="card">
+            <div class="feature-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">文件树 + 多标签页</h3>
+            <p class="feature-desc">打开文件夹自动过滤 HTML 文件。多个文件用标签页管理，支持拖拽排序和关闭。</p>
+          </div>
+
+          <!-- Feature 5: Focus Mode + Edit -->
+          <div class="card">
+            <div class="feature-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v4l3 3"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">专注模式 + 快速编辑</h3>
+            <p class="feature-desc">F11 全屏专注模式。快速编辑模式可直接在预览区修改 HTML，保存后自动刷新。</p>
+          </div>
+
+          <!-- Feature 6: Zoom -->
+          <div class="card">
+            <div class="feature-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="M21 21l-4.35-4.35"/>
+                <line x1="11" y1="8" x2="11" y2="14"/>
+                <line x1="8" y1="11" x2="14" y2="11"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">缩放控制 + 状态栏</h3>
+            <p class="feature-desc">25%~400% 缩放，Cmd+滚轮快捷缩放。状态栏显示文件大小、修改时间、当前缩放比例。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Who Is For -->
+    <section class="section" style="background: var(--gray-100);">
+      <div class="page">
+        <div class="section-header">
+          <h2 class="t-h1 section-title">谁适合用</h2>
+          <p class="section-desc">这些场景如果有共鸣，就适合你</p>
+        </div>
+
+        <div class="personas">
+          <div class="card persona-card">
+            <div class="persona-icon">⚡</div>
+            <h3 class="persona-title">前端开发者</h3>
+            <p class="persona-desc">VS Code 写完直接看效果，不需要切浏览器。多文件项目用标签页管理，导出交付。</p>
+          </div>
+          <div class="card persona-card">
+            <div class="persona-icon">🎨</div>
+            <h3 class="persona-title">设计师</h3>
+            <p class="persona-desc">把 HTML 一键导入 Figma，文字可编辑。或者直接导出高清 PNG 到设计文档。</p>
+          </div>
+          <div class="card persona-card">
+            <div class="persona-icon">🚀</div>
+            <h3 class="persona-title">独立开发者</h3>
+            <p class="persona-desc">一个人做完设计和开发，自己出交付物。不需要找第三方工具。</p>
+          </div>
+          <div class="card persona-card">
+            <div class="persona-icon">📚</div>
+            <h3 class="persona-title">教育工作者</h3>
+            <p class="persona-desc">给学生演示 HTML/CSS 效果，保存即刷新。导出 PDF 作为课程材料。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Get Started -->
+    <section class="section" id="get-started">
+      <div class="page">
+        <div class="section-header">
+          <h2 class="t-h1 section-title">上手</h2>
+          <p class="section-desc">不需要学，上手就会</p>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <h3 class="step-title">打开文件夹</h3>
+            <p class="step-desc">拖拽或 Cmd+O，选择项目文件夹</p>
+            <div class="step-keys">
+              <span class="key">Cmd + O</span>
+              <span class="key">拖拽</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <h3 class="step-title">点击文件预览</h3>
+            <p class="step-desc">保存 HTML 文件，预览自动刷新</p>
+            <div class="step-keys">
+              <span class="key">Cmd + 滚轮缩放</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <h3 class="step-title">导出交付物</h3>
+            <p class="step-desc">Cmd+P 导出 PDF / PNG / SVG / Figma</p>
+            <div class="step-keys">
+              <span class="key">Cmd + P</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tech -->
+    <section class="section" style="background: var(--oat);">
+      <div class="page">
+        <div class="section-header">
+          <h2 class="t-h1 section-title">技术细节</h2>
+          <p class="section-desc">说说技术，省得你问我</p>
+        </div>
+
+        <div class="tech-grid">
+          <div class="tech-item">
+            <div class="tech-bullet"></div>
+            <p class="tech-text"><strong>纯原生技术栈：</strong>Vanilla JavaScript + CSS，无 React/Vue，无构建工具，启动快、内存占用低</p>
+          </div>
+          <div class="tech-item">
+            <div class="tech-bullet"></div>
+            <p class="tech-text"><strong>Electron 33 + Context Isolation：</strong>安全沙箱，渲染进程无法直接访问文件系统</p>
+          </div>
+          <div class="tech-item">
+            <div class="tech-bullet"></div>
+            <p class="tech-text"><strong>文件系统监听：</strong>chokidar 递归监听，文件变化实时同步到文件树</p>
+          </div>
+          <div class="tech-item">
+            <div class="tech-bullet"></div>
+            <p class="tech-text"><strong>导出能力：</strong>PDF（原生打印）、PNG/SVG（Canvas 渲染）、Figma（html2canvas + Figma API）</p>
+          </div>
+        </div>
+
+        <div class="highlight-list">
+          <div class="highlight-item">
+            <div class="highlight-dot"></div>
+            <span>多语言：EN / 中文 / 日本語 / 한국어</span>
+          </div>
+          <div class="highlight-item">
+            <div class="highlight-dot"></div>
+            <span>最近文件夹记录</span>
+          </div>
+          <div class="highlight-item">
+            <div class="highlight-dot"></div>
+            <span>右键菜单（重命名、删除、在 Finder 中显示）</span>
+          </div>
+          <div class="highlight-item">
+            <div class="highlight-dot"></div>
+            <span>专注模式 F11 全屏</span>
+          </div>
+          <div class="highlight-item">
+            <div class="highlight-dot"></div>
+            <span>分栏视图拖拽调宽度</span>
+          </div>
+          <div class="highlight-item">
+            <div class="highlight-dot"></div>
+            <span>文件修改时间、大小实时显示</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="page">
+        <div class="section-header">
+          <h2 class="t-h1 section-title">常见问题</h2>
+        </div>
+
+        <div class="faq-list">
+          <div class="faq-item">
+            <div class="faq-q">Helixo 会替代 VS Code 吗？</div>
+            <div class="faq-a">不会。Helixo 是配套工具，不是竞品。你在 VS Code 写代码，在 Helixo 看效果和导出。</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">支持 Windows 吗？</div>
+            <div class="faq-a">目前只有 macOS 版，Windows 在计划中。</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">免费吗？</div>
+            <div class="faq-a">免费，开源在 GitHub。</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">为什么叫 Helixo？</div>
+            <div class="faq-a">Helix 是 DNA 双螺旋。代码和设计稿，像两条链缠绕在一起。-ixo 来自 Felix 的词根。</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">导出的 Figma 文件是什么样？</div>
+            <div class="faq-a">HTML 被转成图片后导入 Figma，保留视觉样式。文字目前为图片形式，支持进一步手动调整。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section">
+      <div class="page">
+        <div class="cta-section">
+          <h2 class="cta-title">打开文件夹 → 保存刷新 → 导出交付</h2>
+          <p class="cta-desc">Helixo 完全免费，macOS 独占</p>
+          <a href="#" class="btn cta-btn">免费下载 macOS 版</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="page">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <img src="src/img/icon.svg" alt="Helixo" width="28" height="28">
+          <span class="footer-name">Helixo</span>
+        </div>
+        <p class="footer-copy">© 2026 Helixo</p>
+        <div class="footer-links">
+          <a href="#" class="footer-link">GitHub</a>
+          <a href="#" class="footer-link">反馈</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.faq-q').forEach(q => {
+      q.addEventListener('click', () => {
+        const item = q.parentElement;
+        const wasOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+        if (!wasOpen) item.classList.add('open');
+      });
+    });
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const href = a.getAttribute('href');
+        if (href === '#') return;
+        e.preventDefault();
+        const target = document.querySelector(href);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  </script>
+</body>
+</html>
