@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Helixo 重构方案 — 实施计划</title>
+  <style>
+    /* ================================================================
+       设计令牌
+       ================================================================ */
+    :root {
+      --ivory:    #FAF9F5;
+      --slate:    #141413;
+      --clay:     #D97757;
+      --oat:      #E3DACC;
+      --olive:    #788C5D;
+      --rust:     #B04A3F;
+      --gray-150: #F0EEE6;
+      --gray-300: #D1CFC5;
+      --gray-500: #87867F;
+      --gray-700: #3D3D3A;
+      --white:    #FFFFFF;
+
+      --serif: ui-serif, Georgia, 'Times New Roman', serif;
+      --sans:  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      --mono:  ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --border: 1.5px solid var(--gray-300);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--ivory);
+      color: var(--gray-700);
+      font-size: 15px;
+      line-height: 1.55;
+      padding: 56px 32px 96px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 32px 20px 64px; }
+    }
+
+    /* ================================================================
+       右侧大纲 (TOC)
+       ================================================================ */
+    .toc {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 220px;
+      height: 100vh;
+      padding: 72px 20px 40px 0;
+      overflow-y: auto;
+      z-index: 50;
+    }
+    .toc-inner {
+      border-left: 1.5px solid var(--gray-300);
+      padding-left: 14px;
+    }
+    .toc-item {
+      display: block;
+      font-size: 12.5px;
+      color: var(--gray-500);
+      text-decoration: none;
+      padding: 4px 0;
+      line-height: 1.4;
+      transition: color 120ms;
+    }
+    .toc-item:hover { color: var(--clay); }
+    .toc-item.on { color: var(--slate); font-weight: 500; }
+    .toc-item.h3 { padding-left: 12px; font-size: 11.5px; }
+
+    .page.toc-pad { padding-right: 260px; }
+
+    @media (max-width: 1100px) {
+      .toc { display: none; }
+      .page.toc-pad { padding-right: 32px; }
+    }
+    @media (max-width: 720px) {
+      body { padding: 32px 20px 64px; }
+      .page.toc-pad { padding-right: 20px; }
+    }
+
+    /* ================================================================
+       排版
+       ================================================================ */
+    h1 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 38px;
+      line-height: 1.15;
+      color: var(--slate);
+      margin-bottom: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    h2 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 24px;
+      color: var(--slate);
+      margin: 40px 0 14px;
+      letter-spacing: -0.01em;
+      scroll-margin-top: 20px;
+    }
+
+    h3 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 20px;
+      color: var(--slate);
+      margin: 28px 0 10px;
+      scroll-margin-top: 20px;
+    }
+
+    h4 {
+      font-family: var(--sans);
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--slate);
+      margin: 18px 0 8px;
+    }
+
+    p { margin-bottom: 12px; max-width: 680px; }
+
+    code {
+      font-family: var(--mono);
+      font-size: 13px;
+      background: var(--gray-150);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 12px;
+    }
+
+    /* ================================================================
+       需求盒子
+       ================================================================ */
+    .prompt-box {
+      background: var(--gray-150);
+      border: var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      font-size: 14.5px;
+      margin-bottom: 48px;
+      max-width: 760px;
+    }
+    .prompt-box .label {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray-500);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    /* ================================================================
+       摘要栏
+       ================================================================ */
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 56px;
+    }
+    @media (max-width: 900px) { .summary { grid-template-columns: repeat(2, 1fr); } }
+
+    .summary .cell {
+      background: var(--white);
+      border: var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+    }
+    .summary .k {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray-500);
+      margin-bottom: 6px;
+    }
+    .summary .v {
+      font-size: 17px;
+      color: var(--slate);
+      font-weight: 600;
+    }
+    .summary .v.accent { color: var(--clay); }
+    .summary .v.olive { color: var(--olive); }
+
+    /* ================================================================
+       痛点卡片网格
+       ================================================================ */
+    .pain-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin: 16px 0 32px;
+    }
+    @media (max-width: 760px) { .pain-grid { grid-template-columns: 1fr; } }
+
+    .pain-card {
+      background: var(--white);
+      border: var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+    }
+    .pain-card .pain-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .pain-card .pain-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--oat);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .pain-card .pain-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--slate);
+    }
+    .pain-card p {
+      font-size: 13.5px;
+      color: var(--gray-700);
+      margin: 0;
+      max-width: none;
+    }
+    .pain-card .pain-metric {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--clay);
+      margin-top: 10px;
+      font-weight: 600;
+    }
+
+    /* ================================================================
+       数据表
+       ================================================================ */
+    table.data {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--white);
+      border: var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin: 16px 0;
+    }
+    table.data thead th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray-500);
+      background: var(--gray-150);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--gray-300);
+    }
+    table.data tbody td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--gray-150);
+      font-size: 14px;
+      vertical-align: middle;
+    }
+    table.data tbody tr:last-child td { border-bottom: none; }
+    table.data tbody tr:hover { background: var(--ivory); }
+
+    .pill {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .pill.p0 { background: #F3D9CC; color: #8A3B1E; }
+    .pill.p1 { background: var(--oat); color: var(--slate); }
+    .pill.p2 { background: #E4E9DC; color: #4B5C39; }
+
+    /* ================================================================
+       目录树
+       ================================================================ */
+    .dir-tree {
+      background: var(--slate);
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
+      margin: 16px 0;
+      overflow-x: auto;
+    }
+    .dir-tree pre {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.75;
+      color: #E8E6DE;
+    }
+    .dir-tree .dir  { color: #C9B98A; }
+    .dir-tree .file { color: #E8E6DE; }
+    .dir-tree .unchanged { color: var(--gray-500); }
+    .dir-tree .new { color: var(--olive); }
+    .dir-tree .comment { color: var(--gray-500); }
+
+    /* ================================================================
+       模块卡片
+       ================================================================ */
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin: 16px 0;
+    }
+    @media (max-width: 760px) { .module-grid { grid-template-columns: 1fr; } }
+
+    .module-card {
+      background: var(--white);
+      border: var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+    }
+    .module-card .mod-name {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--slate);
+      margin-bottom: 6px;
+    }
+    .module-card .mod-desc {
+      font-size: 13.5px;
+      color: var(--gray-700);
+      margin-bottom: 10px;
+    }
+    .module-card .mod-forbid {
+      font-size: 12.5px;
+      color: var(--rust);
+      margin-bottom: 10px;
+    }
+    .module-card .mod-forbid strong { color: var(--slate); }
+    .module-card .mod-api {
+      background: var(--slate);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      overflow-x: auto;
+    }
+    .module-card .mod-api pre {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.6;
+      color: #E8E6DE;
+    }
+    .module-card .mod-api .kw { color: var(--clay); }
+    .module-card .mod-api .fn { color: #C9B98A; }
+    .module-card .mod-api .cm { color: var(--gray-500); }
+
+    /* ================================================================
+       时间线
+       ================================================================ */
+    .milestones { display: flex; flex-direction: column; gap: 0; }
+    .milestone {
+      display: grid;
+      grid-template-columns: 130px 28px 1fr;
+      gap: 0 18px;
+      position: relative;
+    }
+    .milestone .when {
+      text-align: right;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--gray-500);
+      padding-top: 4px;
+    }
+    .milestone .dot-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .milestone .dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 3px solid var(--clay);
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .milestone .dot.p0 { border-color: var(--rust); }
+    .milestone .dot.p1 { border-color: var(--clay); }
+    .milestone .dot.p2 { border-color: var(--olive); }
+    .milestone .line {
+      width: 2px;
+      flex: 1;
+      background: var(--gray-300);
+      margin: 4px 0;
+    }
+    .milestone:last-child .line { display: none; }
+    .milestone .body { padding-bottom: 36px; }
+    .milestone .body h3 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 19px;
+      color: var(--slate);
+      margin: 0 0 6px;
+    }
+    .milestone .body p {
+      font-size: 14px;
+      color: var(--gray-500);
+      margin-bottom: 10px;
+      max-width: 620px;
+    }
+    .milestone .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+    .milestone .tag {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      background: var(--gray-150);
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      padding: 3px 8px;
+      color: var(--gray-700);
+    }
+
+    /* ================================================================
+       事件总线表格
+       ================================================================ */
+    .event-table-wrap {
+      border: var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--white);
+      margin: 16px 0;
+    }
+    .event-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .event-table thead th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray-500);
+      background: var(--gray-150);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--gray-300);
+    }
+    .event-table tbody td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--gray-150);
+      font-size: 13.5px;
+      vertical-align: middle;
+    }
+    .event-table tbody tr:last-child td { border-bottom: none; }
+    .event-table .ev-name {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--clay);
+      font-weight: 600;
+    }
+    .event-table .ev-dir {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--gray-500);
+    }
+
+    /* ================================================================
+       规则卡片
+       ================================================================ */
+    .rule-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin: 16px 0;
+    }
+    @media (max-width: 760px) { .rule-grid { grid-template-columns: 1fr; } }
+
+    .rule-card {
+      background: var(--white);
+      border: var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+    }
+    .rule-card .rule-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      background: var(--oat);
+      color: var(--slate);
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+    .rule-card h4 { margin-top: 0; }
+    .rule-card pre {
+      background: var(--slate);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.6;
+      color: #E8E6DE;
+      overflow-x: auto;
+      margin: 10px 0 0;
+    }
+    .rule-card pre .bad { color: var(--rust); }
+    .rule-card pre .good { color: var(--olive); }
+
+    /* ================================================================
+       风险表
+       ================================================================ */
+    .risks {
+      border: var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--white);
+      margin: 16px 0;
+    }
+    .risks .row {
+      display: grid;
+      grid-template-columns: 1.6fr 90px 1.6fr;
+      gap: 0;
+    }
+    @media (max-width: 780px) { .risks .row { grid-template-columns: 1fr; } }
+    .risks .row + .row { border-top: var(--border); }
+    .risks .cell { padding: 14px 18px; font-size: 13.5px; }
+    .risks .cell + .cell { border-left: var(--border); }
+    @media (max-width: 780px) { .risks .cell + .cell { border-left: none; border-top: 1px dashed var(--gray-300); } }
+    .risks .head { background: var(--gray-150); font-weight: 600; color: var(--slate); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .sev {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .sev.high { background: #F3D9CC; color: #8A3B1E; }
+    .sev.med  { background: var(--oat); color: var(--slate); }
+    .sev.low  { background: #E4E9DC; color: #4B5C39; }
+
+    /* ================================================================
+       验收清单
+       ================================================================ */
+    .checklist { list-style: none; padding: 0; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 0;
+    }
+    .checklist input[type="checkbox"] {
+      width: 17px; height: 17px;
+      margin-top: 2px;
+      accent-color: var(--olive);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .checklist label { cursor: pointer; flex: 1; }
+
+    .checklist-box {
+      background: var(--white);
+      border: var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
+      margin: 16px 0;
+    }
+
+    /* ================================================================
+       代码块
+       ================================================================ */
+    .code {
+      background: var(--slate);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .code pre {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.65;
+      color: #E8E6DE;
+      white-space: pre;
+    }
+    .code .kw  { color: var(--clay); }
+    .code .str { color: var(--olive); }
+    .code .cm  { color: var(--gray-500); }
+    .code .fn  { color: #C9B98A; }
+
+    /* ================================================================
+       章节
+       ================================================================ */
+    section { margin-bottom: 48px; }
+
+    .sec-head {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+    .sec-head .num {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: var(--oat);
+      color: var(--slate);
+      padding: 3px 9px;
+      border-radius: 8px;
+    }
+    .sec-head h2 { margin: 0; }
+    .sec-intro {
+      font-size: 14.5px;
+      color: var(--gray-500);
+      max-width: 720px;
+      margin-bottom: 20px;
+    }
+
+    /* ================================================================
+       模块图
+       ================================================================ */
+    .module-map {
+      background: var(--white);
+      border: var(--border);
+      border-radius: var(--radius-md);
+      padding: 28px;
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+    .module-map svg { display: block; min-width: 700px; }
+    .module-map text { font-family: var(--mono); font-size: 11.5px; }
+    .caption { font-size: 13px; color: var(--gray-500); margin-top: 12px; }
+
+    /* ================================================================
+       标签
+       ================================================================ */
+    .chip {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      background: var(--gray-150);
+      border: var(--border);
+      color: var(--gray-700);
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="toc" id="toc" aria-label="目录">
+  <div class="toc-inner"></div>
+</nav>
+
+<div class="page toc-pad">
+
+  <header>
+    <div class="eyebrow">探索与规划 · Helixo 架构重构</div>
+    <h1>Helixo 重构方案</h1>
+    <div class="prompt-box">
+      <span class="label">原始需求</span>
+      降低单文件认知负荷，建立模块边界，让 AI 辅助改动时能够准确定位影响面、减少回归。将 ~5300 行的 renderer.js 拆分为职责清晰的模块，引入事件总线，补充核心路径单元测试。
+    </div>
+  </header>
+
+  <!-- ================================================================ -->
+
+  <div class="summary">
+    <div class="cell"><div class="k">renderer.js 当前</div><div class="v accent">~5300 行</div></div>
+    <div class="cell"><div class="k">目标单文件上限</div><div class="v olive">&lt; 1500 行</div></div>
+    <div class="cell"><div class="k">预计工期</div><div class="v">5-8 天</div></div>
+    <div class="cell"><div class="k">测试覆盖模块</div><div class="v">3 个</div></div>
+  </div>
+
+  <!-- ================================================================ -->
+
+  <section>
+    <div class="sec-head"><span class="num">01</span><h2 id="pain-points">现状与痛点</h2></div>
+    <p class="sec-intro">四个核心问题导致「改 A break B」的回归成本持续高于开发成本。</p>
+
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="pain-head">
+          <div class="pain-icon">&#128451;</div>
+          <div class="pain-title">文件规模失衡</div>
+        </div>
+        <p>DOM 事件、业务逻辑、状态管理、UI 更新全部杂糅在 renderer.js 中。改一处功能需要在 5000+ 行中跨多个逻辑区域跳跃。</p>
+        <div class="pain-metric">renderer.js ~5300 行</div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-head">
+          <div class="pain-icon">&#128269;</div>
+          <div class="pain-title">隐式全局依赖</div>
+        </div>
+        <p>大量函数通过闭包变量和 DOM querySelector 隐式获取状态。AI 需要全文搜索才能确认调用方和数据流。</p>
+        <div class="pain-metric">调用链不可追踪</div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-head">
+          <div class="pain-icon">&#128172;</div>
+          <div class="pain-title">事件链路分散</div>
+        </div>
+        <p>iframe 与 renderer 通信涉及 postMessage、巨型 switch、多处直接回传。新增 inspector 操作需改 3~4 个不相关区域。</p>
+        <div class="pain-metric">改动面不可预测</div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-head">
+          <div class="pain-icon">&#128736;</div>
+          <div class="pain-title">无自动化测试</div>
+        </div>
+        <p>所有验证依赖手工启动 App 点击。最近 3 次迭代均出现回归，修复成本高于开发成本。</p>
+        <div class="pain-metric">0 单元测试</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+
+  <section>
+    <div class="sec-head"><span class="num">02</span><h2 id="goals">重构目标</h2></div>
+    <p class="sec-intro">按优先级分层，P0 必须完成，P1 强烈建议，P2 锦上添花。</p>
+
+    <table class="data">
+      <thead>
+        <tr>
+          <th>优先级</th>
+          <th>目标</th>
+          <th>验收标准</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="pill p0">P0</span></td>
+          <td>拆分 renderer.js</td>
+          <td>单文件 &lt; 1500 行，每个业务领域独立文件</td>
+        </tr>
+        <tr>
+          <td><span class="pill p0">P0</span></td>
+          <td>显式化模块接口</td>
+          <td>每个模块的导出函数有 JSDoc，无隐式全局依赖</td>
+        </tr>
+        <tr>
+          <td><span class="pill p1">P1</span></td>
+          <td>引入事件总线</td>
+          <td>iframe/inspector/zoom/ruler 通过命名事件通信，不直接调用内部函数</td>
+        </tr>
+        <tr>
+          <td><span class="pill p1">P1</span></td>
+          <td>补核心路径单元测试</td>
+          <td>applyRulerToGroup、extractBreakpointsFromIframe、inspector 坐标转换有测试覆盖</td>
+        </tr>
+        <tr>
+          <td><span class="pill p2">P2</span></td>
+          <td>建立架构说明文档</td>
+          <td>新 AI 会话能在 5 分钟内理解模块边界和关键约定</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================================================================ -->
+
+  <section>
+    <div class="sec-head"><span class="num">03</span><h2 id="structure">模块拆分方案</h2></div>
+    <p class="sec-intro">从单一巨石文件演进为按业务领域分层的模块树。</p>
+
+    <h3 id="dir-tree">目标目录结构</h3>
+    <div class="dir-tree">
+      <pre>src/renderer/
+<span class="unchanged">  index.html              # 不变</span>
+<span class="unchanged">  index.css               # 不变</span>
+<span class="unchanged">  i18n.js                 # 不变</span>
+<span class="unchanged">  helixo.js               # 不变（全局配置/常量）</span>
+<span class="unchanged">  utils.js                # 不变（通用工具函数）</span>
+<span class="unchanged">  preview.js              # 不变（iframe 内注入脚本）</span>
+
+<span class="new">  main.js                 # 入口：初始化顺序、模块组装、全局快捷键</span>
+
+<span class="dir">  tabs/</span>
+<span class="new">    controller.js         # Tab 增删改查、状态管理</span>
+<span class="new">    renderer.js           # Tab DOM 渲染（tab bar、iframe 创建/复用）</span>
+<span class="new">    navigation.js         # 前进后退、链接点击、hash 导航</span>
+
+<span class="dir">  preview/</span>
+<span class="new">    manager.js            # iframe src 加载、生命周期、刷新控制</span>
+<span class="new">    ruler.js              # 标尺宽度计算、applyRulerToGroup、ResizeObserver</span>
+<span class="new">    zoom.js               # 缩放值管理、setFrameDocumentZoom、reset</span>
+<span class="new">    inspector.js          # 检查器开关、tooltip、context menu、坐标转换</span>
+
+<span class="dir">  analyze/</span>
+<span class="new">    index.js              # Analyze 面板入口，注册各模块</span>
+<span class="new">    colorPalette.js       # 色彩提取、刷新、渲染</span>
+<span class="new">    typography.js         # 字体清单提取、刷新、渲染</span>
+<span class="new">    breakpoints.js        # 断点提取、渲染、点击事件</span>
+
+<span class="dir">  fileTree/</span>
+<span class="new">    renderer.js           # 树形 DOM 渲染</span>
+<span class="new">    interactions.js       # 点击、拖拽、右键菜单</span>
+<span class="new">    search.js             # 过滤、高亮</span>
+
+<span class="unchanged">  workspace.js            # 已存在：工作区状态序列化/反序列化</span>
+<span class="unchanged">  status.js               # 已存在：状态栏消息</span>
+<span class="unchanged">  outline.js              # 已存在：大纲渲染</span>
+<span class="new">  events.js               # 新增：轻量事件总线</span></pre>
+    </div>
+
+    <h3 id="module-boundaries">关键模块职责边界</h3>
+    <div class="module-grid">
+      <div class="module-card">
+        <div class="mod-name">preview/manager.js</div>
+        <div class="mod-desc">管理 iframe 的创建、销毁、src 加载。</div>
+        <div class="mod-forbid"><strong>禁止：</strong>直接操作 ruler width、zoom level、inspector state</div>
+        <div class="mod-api"><pre><span class="kw">export function</span> <span class="fn">createPreviewFrame</span>(container, src)
+<span class="kw">export function</span> <span class="fn">loadPreviewFrame</span>(frame, src)</pre></div>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">preview/ruler.js</div>
+        <div class="mod-desc">唯一有权修改 iframe 的 width/height/transform 的模块。</div>
+        <div class="mod-forbid"><strong>禁止：</strong>直接调用 zoom 或 inspector 的函数</div>
+        <div class="mod-api"><pre><span class="kw">export function</span> <span class="fn">computeRulerStyles</span>(width, cw, ch)
+<span class="kw">export function</span> <span class="fn">applyRulerToGroup</span>(group, width)</pre></div>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">preview/inspector.js</div>
+        <div class="mod-desc">管理检查器开关状态、tooltip、context menu、坐标映射。</div>
+        <div class="mod-forbid"><strong>禁止：</strong>直接修改 iframe 样式或 ruler 状态</div>
+        <div class="mod-api"><pre><span class="kw">export function</span> <span class="fn">enableInspector</span>(tab)
+<span class="kw">export function</span> <span class="fn">disableInspector</span>(tab)
+<span class="kw">export function</span> <span class="fn">mapInspectorCoords</span>(x, y, iframe)</pre></div>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">events.js（事件总线）</div>
+        <div class="mod-desc">轻量级 pub/sub，基于 EventTarget。</div>
+        <div class="mod-forbid"><strong>禁止：</strong>在事件处理器中同步触发新事件（防循环）</div>
+        <div class="mod-api"><pre><span class="kw">export function</span> <span class="fn">on</span>(event, handler)
+<span class="kw">export function</span> <span class="fn">emit</span>(event, payload)</pre></div>
+      </div>
+    </div>
+
+    <h3 id="event-bus">事件总线约定</h3>
+    <div class="event-table-wrap">
+      <table class="event-table">
+        <thead>
+          <tr>
+            <th>事件名</th>
+            <th>发布者</th>
+            <th>订阅者</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="ev-name">tab:switched</span></td>
+            <td><span class="ev-dir">tabs/controller.js</span></td>
+            <td>preview/inspector.js, preview/zoom.js</td>
+          </tr>
+          <tr>
+            <td><span class="ev-name">ruler:changed</span></td>
+            <td><span class="ev-dir">preview/ruler.js</span></td>
+            <td>preview/inspector.js（重算坐标映射）</td>
+          </tr>
+          <tr>
+            <td><span class="ev-name">inspector:contextmenu</span></td>
+            <td><span class="ev-dir">preview/inspector.js</span></td>
+            <td>main.js（显示菜单）</td>
+          </tr>
+          <tr>
+            <td><span class="ev-name">inspector:copyImage</span></td>
+            <td><span class="ev-dir">main.js</span></td>
+            <td>preview/inspector.js</td>
+          </tr>
+          <tr>
+            <td><span class="ev-name">zoom:changed</span></td>
+            <td><span class="ev-dir">preview/zoom.js</span></td>
+            <td>preview/manager.js</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+
+  <section>
+    <div class="sec-head"><span class="num">04</span><h2 id="phases">重构步骤</h2></div>
+    <p class="sec-intro">按风险从低到高分 5 个 Phase，每个 Phase 独立可验证。</p>
+
+    <div class="milestones">
+      <div class="milestone">
+        <div class="when">Phase 1<br>1-2 天</div>
+        <div class="dot-col"><span class="dot p0"></span><span class="line"></span></div>
+        <div class="body">
+          <h3>安全提取（不改行为）</h3>
+          <p>把最近改动最频繁、bug 最多的两个模块先从 renderer.js 中剥离。验证 App 行为与重构前完全一致。</p>
+          <div class="tags">
+            <span class="tag">提取 preview/ruler.js</span>
+            <span class="tag">提取 preview/inspector.js</span>
+            <span class="tag">保留 handlePreviewMessage dispatcher</span>
+          </div>
+        </div>
+      </div>
+      <div class="milestone">
+        <div class="when">Phase 2<br>1-2 天</div>
+        <div class="dot-col"><span class="dot p0"></span><span class="line"></span></div>
+        <div class="body">
+          <h3>事件总线化</h3>
+          <p>解除 ruler/inspector/zoom/tabs 之间的直接函数调用，改为命名事件通信。</p>
+          <div class="tags">
+            <span class="tag">实现 events.js</span>
+            <span class="tag">syncInspectorToTab → tab:switched</span>
+            <span class="tag">handlePreviewMessage 分支 → 事件订阅</span>
+          </div>
+        </div>
+      </div>
+      <div class="milestone">
+        <div class="when">Phase 3<br>1 天</div>
+        <div class="dot-col"><span class="dot p1"></span><span class="line"></span></div>
+        <div class="body">
+          <h3>Analyze 面板拆分</h3>
+          <p>把 Color Palette、Typography、Breakpoints 拆成独立模块，analyze/index.js 作为聚合入口。</p>
+          <div class="tags">
+            <span class="tag">analyze/colorPalette.js</span>
+            <span class="tag">analyze/typography.js</span>
+            <span class="tag">analyze/breakpoints.js</span>
+          </div>
+        </div>
+      </div>
+      <div class="milestone">
+        <div class="when">Phase 4<br>2-3 天</div>
+        <div class="dot-col"><span class="dot p1"></span><span class="line"></span></div>
+        <div class="body">
+          <h3>补核心路径单元测试</h3>
+          <p>给最脆弱的交叉边界加单元测试：ruler scale 计算、breakpoints 提取、inspector 坐标转换。</p>
+          <div class="tags">
+            <span class="tag">preview/ruler.test.js</span>
+            <span class="tag">analyze/breakpoints.test.js</span>
+            <span class="tag">preview/inspector.test.js</span>
+          </div>
+        </div>
+      </div>
+      <div class="milestone">
+        <div class="when">Phase 5<br>可选</div>
+        <div class="dot-col"><span class="dot p2"></span><span class="line"></span></div>
+        <div class="body">
+          <h3>File Tree 拆分</h3>
+          <p>如需更复杂的文件操作（多选、批量删除），再拆 fileTree/renderer.js 和 fileTree/interactions.js。</p>
+          <div class="tags">
+            <span class="tag">fileTree/renderer.js</span>
+            <span class="tag">fileTree/interactions.js</span>
+            <span class="tag">fileTree/search.js</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+
+  <section>
+    <div class="sec-head"><span class="num">05</span><h2 id="rules">代码规范约定</h2></div>
+    <p class="sec-intro">四条硬性规则，重构过程中新写的模块必须遵守。</p>
+
+    <div class="rule-grid">
+      <div class="rule-card">
+        <span class="rule-num">规则 1</span>
+        <h4>模块间调用规则</h4>
+        <p>允许向下调用，禁止横向直接操纵。跨领域通信必须通过事件总线。</p>
+        <pre><span class="bad">&#10007;</span> analyze/breakpoints.js → preview/ruler.js
+<span class="good">&#10003;</span> analyze/breakpoints.js → emit('ruler:setWidth', 1440)
+<span class="good">&#10003;</span> preview/ruler.js → on('ruler:setWidth', ...)</pre>
+      </div>
+      <div class="rule-card">
+        <span class="rule-num">规则 2</span>
+        <h4>函数签名必须带 JSDoc</h4>
+        <p>每个导出的函数都要有 @param 和 @returns，复杂对象用 @typedef。</p>
+        <pre><span class="good">&#10003;</span> <span class="kw">@param</span> {Object} group
+<span class="good">&#10003;</span> <span class="kw">@param</span> {string|number} width
+<span class="good">&#10003;</span> <span class="kw">@returns</span> {RulerStyles}</span></pre>
+      </div>
+      <div class="rule-card">
+        <span class="rule-num">规则 3</span>
+        <h4>禁止新增隐式全局</h4>
+        <p>新模块不准访问 window.* 上的业务状态。所有依赖通过参数传入或事件总线获取。</p>
+        <pre><span class="bad">&#10007;</span> <span class="kw">function</span> foo() { <span class="kw">return</span> window.rulerWidth; }</span>
+<span class="good">&#10003;</span> <span class="kw">function</span> foo(width) { <span class="kw">return</span> width; }</pre>
+      </div>
+      <div class="rule-card">
+        <span class="rule-num">规则 4</span>
+        <h4>DOM 查询集中化</h4>
+        <p>每个模块在初始化时缓存自己的 DOM 引用，禁止在业务函数中临时 getElementById。</p>
+        <pre><span class="bad">&#10007;</span> <span class="kw">function</span> show() {
+  document.getElementById('menu').style.display = '';
+}
+<span class="good">&#10003;</span> <span class="kw">const</span> menu = document.getElementById('menu');
+<span class="kw">function</span> show() { menu.style.display = ''; }</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+
+  <section>
+    <div class="sec-head"><span class="num">06</span><h2 id="risks">风险与规避</h2></div>
+
+    <div class="risks">
+      <div class="row">
+        <div class="cell head">风险</div>
+        <div class="cell head">严重度</div>
+        <div class="cell head">规避措施</div>
+      </div>
+      <div class="row">
+        <div class="cell">拆文件时破坏事件监听顺序</div>
+        <div class="cell"><span class="sev high">HIGH</span></div>
+        <div class="cell">每次拆完一个模块，立即用验证脚本跑一遍该模块的核心路径</div>
+      </div>
+      <div class="row">
+        <div class="cell">事件总线引入后调试困难</div>
+        <div class="cell"><span class="sev med">MED</span></div>
+        <div class="cell">在 events.js 中加 emit 日志开关，开发模式打印所有事件流</div>
+      </div>
+      <div class="row">
+        <div class="cell">JSDoc 和实际代码不同步</div>
+        <div class="cell"><span class="sev med">MED</span></div>
+        <div class="cell">每次改动函数签名时让 AI 同步更新 JSDoc，类型检查作为 review 必检项</div>
+      </div>
+      <div class="row">
+        <div class="cell">旧代码和新模块混用</div>
+        <div class="cell"><span class="sev low">LOW</span></div>
+        <div class="cell">设置「禁止向 renderer.js 新增业务代码」门禁，新功能必须写入独立模块</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+
+  <section>
+    <div class="sec-head"><span class="num">07</span><h2 id="checklist">验收清单</h2></div>
+    <p class="sec-intro">重构完成后的逐项检查，全部通过方可合入 main。</p>
+
+    <div class="checklist-box">
+      <ul class="checklist">
+        <li><input type="checkbox" id="c1"><label for="c1"><code>renderer.js</code> 行数 &lt; 1500</label></li>
+        <li><input type="checkbox" id="c2"><label for="c2"><code>npm run test</code> 通过（新增 ruler/inspector/breakpoints 单元测试）</label></li>
+        <li><input type="checkbox" id="c3"><label for="c3">启动 App，手工验证：打开文件、切换 tab、调 ruler 宽度、开 inspector</label></li>
+        <li><input type="checkbox" id="c4"><label for="c4">右键复制图片、提取断点、导出 PDF 均正常</label></li>
+        <li><input type="checkbox" id="c5"><label for="c5">键盘按住 ArrowUp 调大 ruler 宽度至 3000px，无闪烁</label></li>
+        <li><input type="checkbox" id="c6"><label for="c6">断点 1440px 在 1200px 容器内正确 scale，media query 生效</label></li>
+        <li><input type="checkbox" id="c7"><label for="c7">Inspector 在 scale 模式下右键坐标正确</label></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+
+  <section style="margin-top:64px; padding-top:32px; border-top: var(--border);">
+    <p style="font-size:13px; color: var(--gray-500);">
+      文档版本：v1.0 &nbsp;·&nbsp; 对应代码版本：main @ 057c785
+    </p>
+  </section>
+
+</div>
+
+<script>
+  /* ================================================================
+     大纲自动生成 + 滚动高亮
+     ================================================================ */
+  (function() {
+    var toc = document.querySelector('.toc-inner');
+    if (!toc) return;
+    var headings = document.querySelectorAll('h2[id], h3[id]');
+    headings.forEach(function(h) {
+      var a = document.createElement('a');
+      a.href = '#' + h.id;
+      a.textContent = h.textContent;
+      a.className = 'toc-item ' + h.tagName.toLowerCase();
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      toc.appendChild(a);
+    });
+
+    var items = document.querySelectorAll('.toc-item');
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          items.forEach(function(it) { it.classList.remove('on'); });
+          var active = document.querySelector('.toc-item[href="#' + entry.target.id + '"]');
+          if (active) active.classList.add('on');
+        }
+      });
+    }, { rootMargin: '-20% 0px -60% 0px' });
+
+    headings.forEach(function(h) { observer.observe(h); });
+  })();
+</script>
+
+</body>
+</html>

@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Helixo — 本地 HTML 生产力工具</title>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/duotone/style.css">
 <style>
+@font-face{font-family:'Unbounded';font-weight:700;src:url('fonts/unbounded-700.ttf') format('truetype')}
+@font-face{font-family:'Unbounded';font-weight:900;src:url('fonts/unbounded-900.ttf') format('truetype')}
 :root{
   --ivory:#FAF9F5;
   --slate:#141413;
@@ -16,25 +19,37 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--sans);background:var(--ivory);color:var(--slate);line-height:1.6;font-size:20px}
-.container{max-width:720px;margin:0 auto;padding:48px 24px}
+.container{max-width:960px;margin:0 auto;padding:48px 24px}
 header{margin-bottom:64px}
 .badge{display:inline-block;padding:4px 12px;border-radius:20px;background:var(--oat);font-size:12px;font-weight:600;letter-spacing:.02em;margin-bottom:16px}
-.brand-title{font-family:var(--serif);font-style:italic;font-weight:600;letter-spacing:-0.02em;font-size:86px;display:block;line-height:1.1;margin-bottom:8px}
-.brand-text{font-family:var(--serif);font-style:italic;font-weight:600}
+.brand-title{font-family:'Unbounded',var(--serif);font-style:normal;font-weight:900;letter-spacing:-0.02em;font-size:86px;display:block;line-height:1.1;margin-bottom:8px}
+.brand-text{font-family:'Unbounded',var(--serif);font-style:normal;font-weight:700}
 h1{font-family:var(--serif);font-size:42px;line-height:1.2;margin-bottom:16px;text-align:center}
 .lead{font-size:18px;color:var(--gray-500);margin-top:40px;margin-bottom:32px}
-section{margin-bottom:64px}
+section{margin-bottom:80px}
 h2{font-family:var(--serif);font-size:24px;margin-bottom:24px;display:flex;align-items:center;gap:10px}
 h2 .num{color:var(--clay);font-size:28px;font-weight:400}
-.feature{margin-bottom:40px}
-.feature h3{font-size:18px;font-weight:600;margin-bottom:8px}
-.feature p{color:var(--gray-500);font-size:15px}
 .divider{height:1px;background:var(--oat);margin:48px 0}
 .cta{text-align:center;margin-top:80px}
 .cta p{color:var(--gray-500);font-size:14px;margin-top:16px}
 .logo{width:200px;height:200px;border-radius:16px;margin:0 auto 20px;display:block}
-.hero-img{width:100%;border-radius:12px;box-shadow:0 8px 32px rgba(20,20,19,0.08)}
-.screenshot{width:100%;border-radius:12px;margin-bottom:30px;box-shadow:0 8px 32px rgba(20,20,19,0.08)}
+.hero-img{width:100%;border-radius:16px;box-shadow:0 8px 32px rgba(20,20,19,0.08)}
+
+/* Bento Grid */
+.bento{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.bento-img{grid-column:span 2;border-radius:24px;overflow:hidden;background:linear-gradient(135deg,var(--oat) 0%,#f0ece4 100%);box-shadow:0 8px 32px rgba(20,20,19,0.08)}
+.bento-img img{width:100%;height:auto;display:block}
+.bento-card{padding:32px;border-radius:24px;background:#fff;border:1px solid var(--oat);box-shadow:0 4px 24px rgba(20,20,19,0.04);transition:transform .2s ease,box-shadow .2s ease}
+.bento-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(20,20,19,0.08)}
+.bento-card h3{font-size:18px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.bento-card h3 .ph-duotone{font-size:24px;color:var(--clay)}
+.bento-card p{color:var(--gray-500);font-size:15px;line-height:1.6}
+
+@media (max-width:640px){
+  .bento{grid-template-columns:1fr}
+  .bento-img{grid-column:span 1}
+  .brand-title{font-size:52px}
+}
 </style>
 </head>
 <body>
@@ -53,79 +68,91 @@ h2 .num{color:var(--clay);font-size:28px;font-weight:400}
 
 <section>
   <h2><span class="num">01</span> 文件夹即工作区</h2>
-  <img src="1.png" alt="" class="screenshot">
-  <div class="feature">
-    <h3>自动扫描与索引</h3>
-    <p>打开一个文件夹，<span class="brand-text">Helixo</span> 自动识别其中所有 HTML 文件，按目录结构呈现。支持小文件过滤、MHTML 识别，再也不用在 Finder 里逐个双击。</p>
-  </div>
-  <div class="feature">
-    <h3>收藏夹 + 最近文件</h3>
-    <p>常用文件一键收藏，最近打开的文档随时回溯。左侧边栏在"文件树 / 收藏夹 / 最近"三种视图间自由切换。</p>
+  <div class="bento">
+    <div class="bento-img"><img src="1.png" alt=""></div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-folder-open"></i> 自动扫描与索引</h3>
+      <p>打开一个文件夹，<span class="brand-text">Helixo</span> 自动识别其中所有 HTML 文件，按目录结构呈现。支持小文件过滤、MHTML 识别，再也不用在 Finder 里逐个双击。</p>
+    </div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-bookmarks"></i> 收藏夹 + 最近文件</h3>
+      <p>常用文件一键收藏，最近打开的文档随时回溯。左侧边栏在"文件树 / 收藏夹 / 最近"三种视图间自由切换。</p>
+    </div>
   </div>
 </section>
 
 <section>
   <h2><span class="num">02</span> 像 IDE 一样管理文档</h2>
-  <img src="2.png" alt="" class="screenshot">
-  <div class="feature">
-    <h3>多标签 + 拖拽分屏</h3>
-    <p>任意拖拽标签页即可左右分屏，同时对比两份文档，或一边写、一边看效果。双编辑器分组、标签页 drag-and-drop，操作丝滑程度不输现代代码编辑器。</p>
-  </div>
-  <div class="feature">
-    <h3>工作区自动恢复</h3>
-    <p>关闭即保存，打开即继续。<span class="brand-text">Helixo</span> 自动记忆你的工作状态：打开的文件、标签页顺序、分屏布局、侧边栏宽度、缩放比例，下次启动一键回到上次离开的地方。</p>
+  <div class="bento">
+    <div class="bento-img"><img src="2.png" alt=""></div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-tabs"></i> 多标签 + 拖拽分屏</h3>
+      <p>任意拖拽标签页即可左右分屏，同时对比两份文档，或一边写、一边看效果。双编辑器分组、标签页 drag-and-drop，操作丝滑程度不输现代代码编辑器。</p>
+    </div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-floppy-disk-back"></i> 工作区自动恢复</h3>
+      <p>关闭即保存，打开即继续。<span class="brand-text">Helixo</span> 自动记忆你的工作状态：打开的文件、标签页顺序、分屏布局、侧边栏宽度、缩放比例，下次启动一键回到上次离开的地方。</p>
+    </div>
   </div>
 </section>
 
 <section>
   <h2><span class="num">03</span> Agent 实时同步创作流</h2>
-  <img src="3.png" alt="" class="screenshot">
-  <div class="feature">
-    <h3>文件变更自动刷新</h3>
-    <p>开启自动刷新后，外部任何修改（包括 AI Agent 自动生成或修改内容）都会即时反映在预览中。不再需要手动切回浏览器按 F5 刷新，提升 AI 协作工作效率。</p>
-  </div>
-  <div class="feature">
-    <h3>源码编辑模式</h3>
-    <p>预览和源码一键切换。改代码、看效果、再调代码，小修小改在一个窗口内完成循环，无需编辑器和浏览器来回跳转。</p>
+  <div class="bento">
+    <div class="bento-img"><img src="3.png" alt=""></div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-arrows-clockwise"></i> 文件变更自动刷新</h3>
+      <p>开启自动刷新后，外部任何修改（包括 AI Agent 自动生成或修改内容）都会即时反映在预览中。不再需要手动切回浏览器按 F5 刷新，提升 AI 协作工作效率。</p>
+    </div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-code"></i> 源码编辑模式</h3>
+      <p>预览和源码一键切换。改代码、看效果、再调代码，小修小改在一个窗口内完成循环，无需编辑器和浏览器来回跳转。</p>
+    </div>
   </div>
 </section>
 
 <section>
   <h2><span class="num">04</span> 文档浏览与调试</h2>
-  <img src="4.png" alt="" class="screenshot">
-  <div class="feature">
-    <h3>智能文档大纲</h3>
-    <p>自动从 HTML 页面中提取 h1-h6 标题结构，生成可点击的目录导航。长文档阅读时，左侧大纲随滚动实时高亮当前位置，点击即可跳转 —— 长文档型页面浏览神器。</p>
-  </div>
-  <div class="feature">
-    <h3>元素检查器</h3>
-    <p>点击预览中的任意元素，实时查看 Tag、ID、Class、Color、Background、Font-Size 等样式信息。前端开发者调试样式时，无需再开浏览器 DevTools。</p>
+  <div class="bento">
+    <div class="bento-img"><img src="4.png" alt=""></div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-list-dashes"></i> 智能文档大纲</h3>
+      <p>自动从 HTML 页面中提取 h1-h6 标题结构，生成可点击的目录导航。长文档阅读时，左侧大纲随滚动实时高亮当前位置，点击即可跳转 —— 长文档型页面浏览神器。</p>
+    </div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-cursor-click"></i> 元素检查器</h3>
+      <p>点击预览中的任意元素，实时查看 Tag、ID、Class、Color、Background、Font-Size 等样式信息。前端开发者调试样式时，无需再开浏览器 DevTools。</p>
+    </div>
   </div>
 </section>
 
 <section>
   <h2><span class="num">05</span> 输出与协作</h2>
-  <img src="5.png" alt="" class="screenshot">
-  <div class="feature">
-    <h3>灵活导出任意宽度图片</h3>
-    <p>支持导出完整页面为 PDF、PNG/JPEG（图片可自定义视口宽度）。做分享、归档、演示素材时，不再受浏览器打印样式的限制。</p>
-  </div>
-  <div class="feature">
-    <h3>直接导入 Figma</h3>
-    <p>一键将 HTML 页面转换为 Figma 可识别的格式拷贝到剪贴板，设计协作无缝衔接。从代码到设计稿，不再需要手动还原。</p>
+  <div class="bento">
+    <div class="bento-img"><img src="5.png" alt=""></div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-export"></i> 灵活导出任意宽度图片</h3>
+      <p>支持导出完整页面为 PDF、PNG/JPEG（图片可自定义视口宽度）。做分享、归档、演示素材时，不再受浏览器打印样式的限制。</p>
+    </div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-figma-logo"></i> 直接导入 Figma</h3>
+      <p>一键将 HTML 页面转换为 Figma 可识别的格式拷贝到剪贴板，设计协作无缝衔接。从代码到设计稿，不再需要手动还原。</p>
+    </div>
   </div>
 </section>
 
 <section>
   <h2><span class="num">06</span> 为专注而设计</h2>
-  <img src="6.png" alt="" class="screenshot">
-  <div class="feature">
-    <h3>一键专注模式</h3>
-    <p>整屏只展示文件本身内容，工具栏、侧边栏、标签栏全部隐去。适合演示、截图、沉浸式阅读，也适合向他人展示时聚焦内容本身。</p>
-  </div>
-  <div class="feature">
-    <h3>多语言</h3>
-    <p>完整支持英/中/日/韩四语言，界面所有文案（包括工具提示、状态栏、错误提示）全部国际化。</p>
+  <div class="bento">
+    <div class="bento-img"><img src="6.png" alt=""></div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-presentation"></i> 一键专注模式</h3>
+      <p>整屏只展示文件本身内容，工具栏、侧边栏、标签栏全部隐去。适合演示、截图、沉浸式阅读，也适合向他人展示时聚焦内容本身。</p>
+    </div>
+    <div class="bento-card">
+      <h3><i class="ph-duotone ph-globe"></i> 多语言</h3>
+      <p>完整支持英/中/日/韩四语言，界面所有文案（包括工具提示、状态栏、错误提示）全部国际化。</p>
+    </div>
   </div>
 </section>
 
